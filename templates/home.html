@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Home - MovieMagic</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>MOVIE MAGIC</h1>
+    <nav>
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="{{ url_for('login') }}">Logout</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Welcome, {{ user }}</h2>
+
+    <!-- Search Bar -->
+    <section class="search-bar">
+      <form method="POST" action="{{ url_for('search') }}">
+        <input type="text" name="movie" placeholder="Search movies...">
+        <button type="submit">Search</button>
+      </form>
+    </section>
+
+    <!-- Top Trending Movies -->
+<section class="movies">
+  <h2 class="headline">Top Trending Movies</h2>
+
+  <div class="movie-grid">
+    {% for m in movies %}
+      <div class="movie-card">
+        <h3>{{ m.title }}</h3>
+        <p>Genre: {{ m.genre }}</p>
+        <p>Available Seats: {{ m.available_seats }}</p>
+        <a href="{{ url_for('book', movie_id=m.movie_id) }}" class="btn">Book Now</a>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+  </main>
+</body>
+</html>
