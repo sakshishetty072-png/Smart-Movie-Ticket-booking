@@ -1,120 +1,326 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-import mysql.connector
-from datetime import date
+"""
+Movie Magic - Smart Movie Ticket Booking System
+Main Flask Application for AWS ECS Deployment
+"""
 
-app = Flask(__name__)
-app.secret_key = "supersecretkey"
+from flask import Flask, render_template, redirect, url_for, request, flash, session, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, date, timedelta
+import os
+import uuid
 
-# ---------------- MYSQL CONNECTION ----------------
-db = mysql.connector.connect(
-    host="localhost",
-    port=3307,
-    user="root",
-    password="root123",
-    database="moviemagic"
-)
-cursor = db.cursor(dictionary=True)
+# Try to import movies data, use empty list if not available
+try:
+    from movies_data import MOVIES
+except ImportError:
+    MOVIES = []
 
-# ---------------- ROUTES ----------------
+# Initialize Flask app
+app = Flask(__name__, template_folder='templates')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'moviemagic-secret-key-2024')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///moviemagic.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize extensions
+db = SQLAlchemy(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# ==================== MODELS ====================
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    full_name = db.Column(db.String(100))
+    phone = db.Column(db.String(20))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+class Booking(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    booking_id = db.Column(db.String(50), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, nullable=False)
+    movie_title = db.Column(db.String(200), nullable=False)
+    theater = db.Column(db.String(100))
+    show_date = db.Column(db.String(20))
+    show_time = db.Column(db.String(20))
+    seats_booked = db.Column(db.Integer, nullable=False)
+    seat_numbers = db.Column(db.String(200))
+    total_price = db.Column(db.Float, nullable=False)
+    booking_status = db.Column(db.String(20), default='confirmed')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# ==================== ROUTES ====================
+
 @app.route('/')
-def index():
-    return render_template('index.html')
+def home():
+    featured_movies = MOVIES[:8] if MOVIES else []
+    return render_template('home1.html', movies=featured_movies)
 
-@app.route('/register', methods=['GET','POST'])
+@app.route('/movies')
+def movies():
+    genre = request.args.get('genre')
+    location = request.args.get('location')
+    
+    filtered_movies = MOVIES
+    if genre:
+        filtered_movies = [m for m in filtered_movies if m['genre'].lower() == genre.lower()]
+    if location:
+        filtered_movies = [m for m in filtered_movies if location.lower() in m.get('address', '').lower()]
+    
+    genres = list(set(m['genre'] for m in MOVIES)) if MOVIES else []
+    return render_template('movie_details.html', movies=filtered_movies, genres=genres)
+
+@app.route('/movie/<title>')
+def movie_detail(title):
+    movie = next((m for m in MOVIES if m['title'] == title), None)
+    if not movie:
+        flash('Movie not found', 'danger')
+        return redirect(url_for('movies'))
+    return render_template('movie_details.html', movie=movie)
+
+@app.route('/book/<title>', methods=['GET', 'POST'])
+@login_required
+def book_ticket(title):
+    movie = next((m for m in MOVIES if m['title'] == title), None)
+    if not movie:
+        flash('Movie not found', 'danger')
+        return redirect(url_for('movies'))
+    
+    if request.method == 'POST':
+        seats = request.form.getlist('seats')
+        show_date = request.form.get('show_date')
+        show_time = request.form.get('show_time')
+        
+        if not seats:
+            flash('Please select at least one seat', 'warning')
+            return render_template('booking.html', movie=movie)
+        
+        booking_id = 'MM' + str(uuid.uuid4())[:8].upper()
+        total_price = movie['price'] * len(seats)
+        
+        booking = Booking(
+            booking_id=booking_id,
+            user_id=current_user.id,
+            movie_title=movie['title'],
+            theater=movie.get('theater', 'Not specified'),
+            show_date=show_date,
+            show_time=show_time,
+            seats_booked=len(seats),
+            seat_numbers=','.join(seats),
+            total_price=total_price
+        )
+        db.session.add(booking)
+        db.session.commit()
+        
+        flash(f'Booking successful! Booking ID: {booking_id}', 'success')
+        return redirect(url_for('confirmation', booking_id=booking_id))
+    
+    return render_template('booking.html', movie=movie)
+
+@app.route('/confirmation/<booking_id>')
+@login_required
+def confirmation(booking_id):
+    booking = Booking.query.filter_by(booking_id=booking_id).first_or_404()
+    return render_template('confirmation.html', booking=booking)
+
+@app.route('/process-payment/<booking_id>', methods=['POST'])
+@login_required
+def process_payment(booking_id):
+    booking = Booking.query.filter_by(booking_id=booking_id).first_or_404()
+    payment_method = request.form.get('payment_method')
+    
+    # Simulate payment processing
+    booking.booking_status = 'paid'
+    db.session.commit()
+    
+    flash('Payment successful! Your booking is confirmed.', 'success')
+    return redirect(url_for('booking_success', booking_id=booking_id))
+
+@app.route('/booking-success/<booking_id>')
+@login_required
+def booking_success(booking_id):
+    booking = Booking.query.filter_by(booking_id=booking_id).first_or_404()
+    return render_template('confirmation.html', booking=booking, success=True)
+
+@app.route('/my-bookings')
+@login_required
+def my_bookings():
+    bookings = Booking.query.filter_by(user_id=current_user.id).order_by(Booking.created_at.desc()).all()
+    return render_template('dashboard.html', bookings=bookings)
+
+# Alias routes for templates that use url_for('register') and url_for('login')
+@app.route('/register')
 def register():
+    """Alias for /auth/register"""
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
     if request.method == 'POST':
-        sql = "INSERT INTO users (username, email, password) VALUES (%s, %s, %s)"
-        values = (request.form['name'], request.form['email'], request.form['password'])
-        cursor.execute(sql, values)
-        db.commit()
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        full_name = request.form.get('full_name')
+        
+        if not username or not email or not password:
+            flash('Please fill in all required fields', 'danger')
+            return render_template('signup.html')
+        
+        if password != confirm_password:
+            flash('Passwords do not match', 'danger')
+            return render_template('signup.html')
+        
+        if User.query.filter((User.username == username) | (User.email == email)).first():
+            flash('Username or email already exists', 'danger')
+            return render_template('signup.html')
+        
+        user = User(username=username, email=email, full_name=full_name)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        
+        flash('Registration successful! Please login.', 'success')
         return redirect(url_for('login'))
-    return render_template('register.html')
+    
+    return render_template('signup.html')
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login')
 def login():
+    """Alias for /auth/login"""
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-
-        cursor.execute("SELECT * FROM users WHERE email=%s", (email,))
-        user = cursor.fetchone()
-
-        if user and user['password'] == password:   # replace with hashed check in production
-            # Store user info in session
-            session['user_id'] = user['user_id']
-            session['user'] = user['username']   # ✅ this is what shows in "Welcome, ..."
-            session['email'] = user['email']
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        user = User.query.filter_by(username=username).first()
+        
+        if user and user.check_password(password):
+            login_user(user)
+            flash('Login successful!', 'success')
             return redirect(url_for('home'))
         else:
-            return render_template('login.html', error="Invalid credentials")
-
+            flash('Invalid username or password', 'danger')
+    
     return render_template('login.html')
 
-@app.route('/home')
-def home():
-    # Fetch movies and bookings
-    cursor.execute("SELECT * FROM movies")
-    movies = cursor.fetchall()
-
-    cursor.execute("SELECT * FROM bookings WHERE user_id=%s", (session['user_id'],))
-    bookings = cursor.fetchall()
-
-    return render_template('home.html', user=session['user'], movies=movies, bookings=bookings)
-
-@app.route('/search', methods=['GET','POST'])
-def search():
-    if request.method == 'POST':
-        query = request.form.get('movie', '')
-        cursor.execute("SELECT * FROM movies WHERE title LIKE %s", ("%" + query + "%",))
-        movies = cursor.fetchall()
-        return render_template('search.html', movies=movies)
-    return render_template('search.html', movies=[])
-
-@app.route('/book/<int:movie_id>', methods=['GET','POST'])
-def book(movie_id):
-    cursor.execute("SELECT * FROM movies WHERE movie_id=%s", (movie_id,))
-    movie = cursor.fetchone()
-
-    # Example show times (could be stored in DB)
-    movie['show_times'] = ["10:00 AM", "2:00 PM", "6:00 PM", "9:00 PM"]
-
-    # Example theaters (replace with DB query if you have a theaters table)
-    theaters = [
-        {"name": "PVR Cinemas", "location": "City Center"},
-        {"name": "INOX", "location": "Mall Road"},
-        {"name": "Cinepolis", "location": "Downtown"}
-    ]
-
-    today = date.today().isoformat()
-
-    if request.method == 'POST':
-        sql = """INSERT INTO bookings (user_id, movie_id, seat_number, location, booking_date)
-                 VALUES (%s, %s, %s, %s, %s)"""
-        values = (session['user_id'], movie_id, request.form['seats'],
-                  request.form['address'], request.form['date'])
-        cursor.execute(sql, values)
-        db.commit()
-
-        # Update available seats (reduce by number of seats booked)
-        seats_booked = len(request.form['seats'].split(","))
-        new_seats = movie['available_seats'] - seats_booked
-        cursor.execute("UPDATE movies SET available_seats=%s WHERE movie_id=%s", (new_seats, movie_id))
-        db.commit()
-
-        return render_template('ticket.html',
-                               title=movie['title'],
-                               date=request.form['date'],
-                               time=request.form['time'],
-                               seats=request.form['seats'],
-                               address=request.form['address'],
-                               amount=request.form['amount'],
-                               user=session['user'])
-    return render_template('book.html', movie=movie, theaters=theaters, today=today)
-
 @app.route('/logout')
+@login_required
 def logout():
-    session.clear()
-    return redirect(url_for('index'))
+    logout_user()
+    flash('You have been logged out', 'info')
+    return redirect(url_for('home'))
+
+@app.route('/auth/register', methods=['GET', 'POST'])
+def auth_register():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        full_name = request.form.get('full_name')
+        
+        if not username or not email or not password:
+            flash('Please fill in all required fields', 'danger')
+            return render_template('signup.html')
+        
+        if password != confirm_password:
+            flash('Passwords do not match', 'danger')
+            return render_template('signup.html')
+        
+        if User.query.filter((User.username == username) | (User.email == email)).first():
+            flash('Username or email already exists', 'danger')
+            return render_template('signup.html')
+        
+        user = User(username=username, email=email, full_name=full_name)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        
+        flash('Registration successful! Please login.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('signup.html')
+
+@app.route('/auth/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        user = User.query.filter_by(username=username).first()
+        
+        if user and user.check_password(password):
+            login_user(user)
+            flash('Login successful!', 'success')
+            return redirect(url_for('home'))
+        else:
+            flash('Invalid username or password', 'danger')
+    
+    return render_template('login.html')
+
+@app.route('/auth/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out', 'info')
+    return redirect(url_for('home'))
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    if request.method == 'POST':
+        current_user.full_name = request.form.get('full_name')
+        current_user.phone = request.form.get('phone')
+        db.session.commit()
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('profile'))
+    return render_template('profile.html', user=current_user)
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/contact')
+def contact():
+    return render_template('contact_us.html')
+
+@app.route('/search')
+def search():
+    query = request.args.get('q', '')
+    results = [m for m in MOVIES if query.lower() in m['title'].lower() or query.lower() in m['genre'].lower()]
+    return render_template('movie_details.html', movies=results, search_query=query)
+
+# ==================== MAIN ====================
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    with app.app_context():
+        db.create_all()
+    print("Starting Movie Magic on AWS ECS...")
+    print("Loaded {} movies".format(len(MOVIES)))
+    # Get port from environment (required for AWS ECS)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
+
