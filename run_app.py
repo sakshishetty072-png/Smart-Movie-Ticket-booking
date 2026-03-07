@@ -13,7 +13,7 @@ import uuid
 from movies_data import MOVIES
 
 # Initialize Flask app
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 app.config['SECRET_KEY'] = 'moviemagic-secret-key-2024'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///moviemagic.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -133,6 +133,25 @@ def confirmation(booking_id):
     booking = Booking.query.filter_by(booking_id=booking_id).first_or_404()
     return render_template('confirmation.html', booking=booking)
 
+@app.route('/process-payment/<booking_id>', methods=['POST'])
+@login_required
+def process_payment(booking_id):
+    booking = Booking.query.filter_by(booking_id=booking_id).first_or_404()
+    payment_method = request.form.get('payment_method')
+    
+    # Simulate payment processing
+    booking.booking_status = 'paid'
+    db.session.commit()
+    
+    flash('Payment successful! Your booking is confirmed.', 'success')
+    return redirect(url_for('booking_success', booking_id=booking_id))
+
+@app.route('/booking-success/<booking_id>')
+@login_required
+def booking_success(booking_id):
+    booking = Booking.query.filter_by(booking_id=booking_id).first_or_404()
+    return render_template('confirmation.html', booking=booking, success=True)
+
 @app.route('/my-bookings')
 @login_required
 def my_bookings():
@@ -230,6 +249,6 @@ def search():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    print("🎬 Starting Movie Magic...")
-    print(f"📽️ Loaded {len(MOVIES)} movies")
+    print("Starting Movie Magic...")
+    print("Loaded {} movies".format(len(MOVIES)))
     app.run(host='0.0.0.0', port=5000, debug=True)
