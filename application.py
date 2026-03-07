@@ -27,8 +27,7 @@ app = Flask(__name__)
 # Security & Config
 app.secret_key = 'moviemagic-secret-key-2024'
 AWS_REGION = os.environ.get('AWS_REGION', 'ap-south-1')
-SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:440744249462:moviemagic"
-
+SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN', '')
 
 # AWS Services (initialized lazily)
 dynamodb = None
@@ -547,6 +546,52 @@ def delete_movie(movie_id):
     
     return redirect(url_for('admin_dashboard'))
 
+
+# --- ALIAS ROUTES FOR TEMPLATES ---
+@app.route('/register')
+def register():
+    """Alias for signup"""
+    return signup()
+
+@app.route('/auth/login')
+def auth_login():
+    """Alias for login"""
+    return login()
+
+@app.route('/auth/register')
+def auth_register():
+    """Alias for signup"""
+    return signup()
+
+@app.route('/auth/logout')
+def auth_logout():
+    """Alias for logout"""
+    return logout()
+
+@app.route('/movies')
+def movies():
+    """Movies listing"""
+    return dashboard()
+
+@app.route('/my-bookings')
+def my_bookings():
+    """User bookings"""
+    return profile()
+
+@app.route('/book/<title>')
+def book_ticket(title):
+    """Book ticket page"""
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    return redirect(url_for('movie_details', movie_id=title))
+
+@app.route('/confirmation/<booking_id>')
+def confirmation(booking_id):
+    """Booking confirmation"""
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    return redirect(url_for('profile'))
+
 # --- SEED INITIAL DATA ---
 # Add some sample movies if using in-memory storage
 if not USE_DYNAMODB and not movies:
@@ -637,21 +682,7 @@ if not USE_DYNAMODB and not movies:
         }
     ]
     print(f"✅ Loaded {len(movies)} sample movies (in-memory)")
-   
-
 
 if __name__ == '__main__':
-    
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-
-
-
-
-
-
-
-
-
-
 
