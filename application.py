@@ -637,12 +637,17 @@ if not USE_DYNAMODB and not movies:
         }
     ]
     print(f"✅ Loaded {len(movies)} sample movies (in-memory)")
+   
+    @app.route('/register')
+def register():
+    return redirect(url_for('signup'))
 
 
 
 if __name__ == '__main__':
     
     app.run(host='0.0.0.0', port=5000, debug=True)
+
 
 
 
