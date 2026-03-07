@@ -27,7 +27,7 @@ app = Flask(__name__)
 # Security & Config
 app.secret_key = 'moviemagic-secret-key-2024'
 AWS_REGION = os.environ.get('AWS_REGION', 'ap-south-1')
-SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:440744249462:moviemagic"
+SNS_TOPIC_ARN = 'arn:aws:sns:us-east-1:440744249462:moviemagic'
 
 # AWS Services (initialized lazily)
 dynamodb = None
@@ -639,6 +639,7 @@ if not USE_DYNAMODB and not movies:
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
 
 
 
