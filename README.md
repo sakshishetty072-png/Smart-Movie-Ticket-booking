@@ -7,6 +7,7 @@ A cloud-based movie ticket booking application built with Flask, AWS EC2, Dynamo
 - **User Authentication**: Register, login, and profile management
 - **Movie Browsing**: Search and filter movies by location and genre
 - **Interactive Seat Selection**: Visual seat layout for choosing seats
+- **Payment Gateway**: Secure payment with Card, UPI, Net Banking, Wallet
 - **Real-time Booking**: Instant booking confirmation with AWS SNS
 - **Booking History**: View and manage past bookings
 - **Cloud-native**: Deployed on AWS EC2 with DynamoDB storage
@@ -17,7 +18,7 @@ A cloud-based movie ticket booking application built with Flask, AWS EC2, Dynamo
 - **Database**: SQLite (development) / AWS DynamoDB (production)
 - **Notifications**: AWS SNS
 - **Cloud**: AWS EC2
-- **Frontend**: HTML, CSS, Bootstrap 5
+- **Frontend**: HTML, CSS, Bootstrap 5, JavaScript
 
 ## Project Structure
 
@@ -35,8 +36,9 @@ moviemagic/
 │   │   ├── dynamodb_service.py
 │   │   └── sns_service.py
 │   └── templates/       # HTML templates
-├── config.py            # Configuration
-├── run.py              # Application entry point
+├── templates/          # Frontend templates
+├── movies_data.py      # Movie data
+├── run_app.py          # Application entry point
 ├── seed_data.py        # Database seeder
 └── requirements.txt    # Python dependencies
 ```
@@ -74,7 +76,7 @@ moviemagic/
 
 6. Run the application:
    ```bash
-   python run.py
+   python run_app.py
    ```
 
 7. Open http://localhost:5000 in your browser
@@ -156,8 +158,16 @@ sudo systemctl enable moviemagic
 2. Browse movies on the homepage
 3. Select a movie and choose showtime
 4. Select seats from the interactive layout
-5. Confirm booking
+5. Complete payment (Card/UPI/Net Banking/Wallet)
 6. Receive confirmation via email/SMS
+
+## Screenshots
+
+- Home page with featured movies
+- Movie listing with genre/location filters
+- Interactive seat selection
+- Payment gateway
+- Booking confirmation
 
 ## License
 
@@ -166,4 +176,10 @@ MIT License
 ## Author
 
 Movie Magic Team
+
+## Acknowledgments
+
+- Flask Documentation
+- AWS Documentation
+- Bootstrap 5
 
