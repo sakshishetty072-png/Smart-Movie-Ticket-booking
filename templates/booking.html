@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Ticket - Movie Magic</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .booking-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 80px;
+        }
+        .seat {
+            width: 40px;
+            height: 40px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .seat.available {
+            background: #28a745;
+            color: white;
+        }
+        .seat.selected {
+            background: #ffc107;
+            color: #000;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fas fa-film me-2"></i>Movie Magic</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="booking-container">
+            <h2 class="mb-4">Book Tickets</h2>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="row">
+                <div class="col-md-4">
+                    <img src="{{ movie.image }}" alt="{{ movie.title }}" class="img-fluid rounded">
+                </div>
+                <div class="col-md-8">
+                    <h3>{{ movie.title }}</h3>
+                    <p><strong>Genre:</strong> {{ movie.genre }}</p>
+                    <p><strong>Theater:</strong> {{ movie.theater }}</p>
+                    <p><strong>Price:</strong> <span class="text-success">₹{{ movie.price }}</span> per ticket</p>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Select Date</label>
+                            <input type="date" name="show_date" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Select Time</label>
+                            <select name="show_time" class="form-control" required>
+                                <option value="">Choose time</option>
+                                <option value="09:00">09:00 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="15:00">03:00 PM</option>
+                                <option value="18:00">06:00 PM</option>
+                                <option value="21:00">09:00 PM</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Select Seats</label>
+                            <div id="seat-map">
+                                {% for row in ['A', 'B', 'C', 'D', 'E', 'F'] %}
+                                    <div class="mb-2">
+                                        {% for i in range(1, 9) %}
+                                            <input type="checkbox" name="seats" value="{{ row }}{{ i }}" id="seat{{ row }}{{ i }}" class="seat-checkbox" style="display:none;">
+                                            <label for="seat{{ row }}{{ i }}" class="seat available">{{ row }}{{ i }}</label>
+                                        {% endfor %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <p class="mt-2">Selected: <span id="selected-count">0</span> seats</p>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Confirm Booking</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.querySelectorAll('.seat-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const label = this.nextElementSibling;
+                if (this.checked) {
+                    label.classList.remove('available');
+                    label.classList.add('selected');
+                } else {
+                    label.classList.remove('selected');
+                    label.classList.add('available');
+                }
+                document.getElementById('selected-count').textContent = 
+                    document.querySelectorAll('.seat-checkbox:checked').length;
+            });
+        });
+    </script>
+</body>
+</html>
+
