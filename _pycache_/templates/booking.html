@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Seats - Movie Magic</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: #141414;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        
+        .navbar {
+            background: #e50914 !important;
+            padding: 15px;
+        }
+        
+        .navbar-brand {
+            color: white !important;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .container {
+            max-width: 1000px;
+            padding: 30px;
+        }
+        
+        .movie-info {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+        }
+        
+        .screen {
+            background: linear-gradient(to bottom, #333, #111);
+            height: 40px;
+            width: 70%;
+            margin: 30px auto;
+            border-radius: 50% / 100% 100% 0 0;
+            text-align: center;
+            line-height: 40px;
+            color: #666;
+            font-size: 14px;
+            box-shadow: 0 5px 20px rgba(255,255,255,0.1);
+        }
+        
+        .seat-layout {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin: 20px 0;
+        }
+        
+        .seat-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .row-label {
+            width: 30px;
+            color: #888;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .seat {
+            width: 40px;
+            height: 40px;
+            background: #333;
+            border: 2px solid #444;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .seat:hover {
+            background: #e50914;
+            border-color: #e50914;
+        }
+        
+        .seat.selected {
+            background: #e50914;
+            border-color: #ff4444;
+            color: white;
+        }
+        
+        .seat.occupied {
+            background: #222;
+            border-color: #333;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-box {
+            width: 25px;
+            height: 25px;
+            border-radius: 5px;
+        }
+        
+        .legend-box.available { background: #333; border: 2px solid #444; }
+        .legend-box.selected { background: #e50914; }
+        .legend-box.occupied { background: #222; opacity: 0.5; }
+        
+        .booking-summary {
+            background: #1a1a1a;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #333;
+            position: sticky;
+            bottom: 20px;
+        }
+        
+        .selected-seats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+        }
+        
+        .seat-tag {
+            background: #e50914;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+        }
+        
+        .btn-continue {
+            background: #e50914;
+            color: white;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .btn-continue:hover {
+            background: #b20710;
+        }
+        
+        .btn-continue:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        
+        .btn-back {
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">🎬 Movie Magic</a>
+            <a href="/dashboard" class="btn-back">← Back</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Movie Info -->
+        <div class="movie-info">
+            <h2>🎬 {{ movie }}</h2>
+            <p>📍 {{ theater }}</p>
+            <p>📌 {{ address }}</p>
+            <p>💰 Price: ₹{{ price }} per seat</p>
+        </div>
+        
+        <!-- Screen -->
+        <div class="screen">SCREEN</div>
+        
+        <!-- Seat Layout - Rows A to J, Seats 1 to 12 -->
+        <div class="seat-layout" id="seatLayout">
+            {% for row in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'] %}
+            <div class="seat-row">
+                <span class="row-label">{{ row }}</span>
+                {% for seat in range(1, 13) %}
+                <div class="seat" data-row="{{ row }}" data-seat="{{ seat }}" onclick="toggleSeat('{{ row }}{{ seat }}')">
+                    {{ seat }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box available"></div>
+                <span>Available</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box selected"></div>
+                <span>Selected</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box occupied"></div>
+                <span>Occupied</span>
+            </div>
+        
+        <!-- Booking Summary -->
+        <div class="booking-summary">
+            <h3>Booking Summary</h3>
+            <p>Selected Seats: <span id="seatCount">0</span></p>
+            <p>Price per seat: ₹{{ price }}</p>
+            <div class="selected-seats" id="selectedSeats"></div>
+            <p style="font-size: 24px; font-weight: bold; color: #4CAF50;">
+                Total: ₹<span id="totalPrice">0</span>
+            </p>
+            
+            <form id="bookingForm" method="POST" action="/payment">
+                <input type="hidden" name="movie" value="{{ movie }}">
+                <input type="hidden" name="theater" value="{{ theater }}">
+                <input type="hidden" name="address" value="{{ address }}">
+                <input type="hidden" name="price" value="{{ price }}">
+                <input type="hidden" name="selected_seats" id="selectedSeatsInput" value="">
+                <button type="submit" class="btn-continue" id="continueBtn" disabled>
+                    Continue to Payment
+                </button>
+            </form>
+        </div>
+
+    <script>
+        let selectedSeats = [];
+        const price = {{ price }};
+        
+        function toggleSeat(seatId) {
+            const seat = document.querySelector(`[data-row="${seatId.charAt(0)}"][data-seat="${seatId.substring(1)}"]`);
+            
+            if (seat.classList.contains('occupied')) return;
+            
+            if (selectedSeats.includes(seatId)) {
+                selectedSeats = selectedSeats.filter(s => s !== seatId);
+                seat.classList.remove('selected');
+            } else {
+                selectedSeats.push(seatId);
+                seat.classList.add('selected');
+            }
+            
+            updateSummary();
+        }
+        
+        function updateSummary() {
+            document.getElementById('seatCount').textContent = selectedSeats.length;
+            document.getElementById('totalPrice').textContent = selectedSeats.length * price;
+            
+            // Update seat tags
+            const seatsContainer = document.getElementById('selectedSeats');
+            seatsContainer.innerHTML = selectedSeats.map(seat => 
+                `<span class="seat-tag">${seat}</span>`
+            ).join('');
+            
+            // Update hidden input
+            document.getElementById('selectedSeatsInput').value = selectedSeats.join(',');
+            
+            // Enable/disable continue button
+            document.getElementById('continueBtn').disabled = selectedSeats.length === 0;
+        }
+    </script>
+</body>
+</html>

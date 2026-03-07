@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Magic - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: #141414;
+            font-family: Arial, sans-serif;
+        }
+        
+        .navbar {
+            background: #e50914 !important;
+            padding: 15px;
+        }
+        
+        .navbar-brand {
+            color: white !important;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .nav-link {
+            color: white !important;
+            margin-left: 15px;
+        }
+        
+        .search-bar {
+            background: #222;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .search-input {
+            background: #333;
+            border: 1px solid #444;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 5px;
+            width: 100%;
+        }
+        
+        .filter-select {
+            background: #333;
+            border: 1px solid #444;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 5px;
+            width: 100%;
+        }
+        
+        .btn-search {
+            background: #e50914;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            width: 100%;
+        }
+        
+        .section-title {
+            color: white;
+            font-size: 28px;
+            padding: 10px 20px;
+            border-left: 5px solid #e50914;
+            margin: 20px;
+            text-align: left;
+        }
+        
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .movie-card {
+            width: 100%;
+            background: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #333;
+            transition: transform 0.3s;
+        }
+        
+        .movie-card:hover {
+            transform: scale(1.03);
+            border-color: #e50914;
+        }
+        
+        .movie-img {
+            width: 100%;
+            height: 220px;
+            background: #333;
+        }
+        
+        .movie-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .movie-details {
+            padding: 18px;
+        }
+        
+        .movie-title {
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            height: 40px;
+            overflow: hidden;
+        }
+        
+        .movie-info {
+            color: #999;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        
+        .movie-price {
+            color: #4CAF50;
+            font-size: 22px;
+            font-weight: bold;
+            margin: 12px 0;
+        }
+        
+        .btn-book {
+            background: #e50914;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        
+        .btn-book:hover {
+            background: #b20710;
+            color: white;
+        }
+        
+        .show-count {
+            color: #888;
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">🎬 Movie Magic</a>
+            <div class="d-flex">
+                <a href="/dashboard" class="nav-link">Home</a>
+                <a href="/profile" class="nav-link">Profile</a>
+                <a href="/logout" class="nav-link">Logout</a>
+            </div>
+    </nav>
+
+    <!-- Search & Filter -->
+    <div class="search-bar">
+        <form method="GET" action="/dashboard">
+            <div class="row" style="max-width: 1100px; margin: 0 auto;">
+                <div class="col-md-5">
+                    <input type="text" name="q" class="search-input" placeholder="Search movies..." value="{{ search_query or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="genre" class="filter-select">
+                        <option value="">All Genres</option>
+                        <option value="Action">Action</option>
+                        <option value="Comedy">Comedy</option>
+                        <option value="Drama">Drama</option>
+                        <option value="Thriller">Thriller</option>
+                        <option value="Sci-Fi">Sci-Fi</option>
+                        <option value="Horror">Horror</option>
+                        <option value="Romance">Romance</option>
+                        <option value="Adventure">Adventure</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn-search">🔍 Search</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="/dashboard" class="btn-search" style="display:inline-block; text-align:center; text-decoration:none;">↻ Reset</a>
+                </div>
+        </form>
+    </div>
+
+    <!-- Movies Grid - 3 Columns Centered -->
+    <h2 class="section-title">Now Showing</h2>
+    
+    {% if movies %}
+    <div class="movies-grid">
+        {% for movie in movies %}
+        <div class="movie-card">
+            <div class="movie-img">
+                {% if movie.image %}
+                <img src="{{ movie.image }}" alt="{{ movie.title }}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="movie-initial" style="display:none;align-items:center;justify-content:center;width:100%;height:100%;">🎬</div>
+                {% else %}
+                <div class="movie-initial" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;">🎬</div>
+                {% endif %}
+            </div>
+            <div class="movie-details">
+                <div class="movie-title">{{ movie.title }}</div>
+                <div class="movie-info">🎭 {{ movie.genre }}</div>
+                <div class="movie-info">⏱️ {{ movie.duration }} min</div>
+                <div class="movie-info">⭐ {{ movie.rating }}/10</div>
+                <div class="movie-info">📍 {{ movie.theater }}</div>
+                <div class="movie-price">₹{{ movie.price }}</div>
+                <a href="/booking?movie={{ movie.title }}&theater={{ movie.theater }}&address={{ movie.address }}&price={{ movie.price }}" class="btn-book">
+                    🎟️ Book Now
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <p class="show-count">Showing {{ movies|length }} movie(s)</p>
+    {% else %}
+    <p style="color: #888; text-align: center; padding: 40px;">No movies found. Try a different search.</p>
+    {% endif %}
+
+</body>
+</html>
