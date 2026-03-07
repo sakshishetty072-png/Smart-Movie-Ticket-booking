@@ -129,7 +129,7 @@ MOVIES = [
         "theater": " Cinepolis",
         "address": "Sea World, Mumbai",
         "price": 220,
-        "image": "https://tse1.mm.bing.net/th/id/OIP.slExbX6XFz-llH6GKl8GNQHaLH?w=960&h=1440&rs=1&pid=ImgDetMain&o=7&rm=3"
+        "image": "https://tse1.mm.bing.net/th/id/OIP.slExbX6XFz-llH6GKl8GNQHaLH?w=960&h=1440rs=1&pid=ImgDetMain&o=7&rm=3"
     },
     {
         "title": "Welcome",
@@ -229,7 +229,7 @@ MOVIES = [
         "theater": "PVR Cinemas",
         "address": "Trinity, Hyderabad",
         "price": 320,
-        "image": "https://tse3.mm.bing.net/th/id/OIP.A4nmLe5_1ggvhGXit-0QNAHaEK?w=1920&h=1080&rs=1&pid=ImgDetMain&o=7&rm=3"
+        "image": "https://tse3.mm.bing.net/th/id/OIP.A4nmLe5_1ggvhGXit-0QNAHaEK?w=1920&h=1080rs=1&pid=ImgDetMain&o=7&rm=3"
     },
     {
         "title": "War",
@@ -239,7 +239,7 @@ MOVIES = [
         "theater": "INOX",
         "address": "Express Avenue, Chennai",
         "price": 310,
-        "image": "https://tse3.mm.bing.net/th/id/OIP.KfxEgV7wdnjr5HHucyU99AHaLH?w=500&h=750&rs=1&pid=ImgDetMain&o=7&rm=3"
+        "image": "https://tse3.mm.bing.net/th/id/OIP.KfxEgV7wdnjr5HHucyU99AHaLH?w=500&h=750rs=1&pid=ImgDetMain&o=7&rm=3"
     }
 ]
 
